@@ -1,5 +1,0 @@
-@T,table
-@H,ID_basin,area_monte,bacino,tipo_soglie,giallo_portate,arancione_portate,rosso_portate,giallo_tiranti,arancione_tiranti,rosso_tiranti,nome_stazione,formula,H0,a,b,c,d
-30_Ofa,307.87,OFANTO,P,51,76,101,,,,NO_FRC,,,,,,
-25_Ofa,87.15,OFANTO,P,21,31,41,,,,NO_FRC,,,,,,
-26_Ofa,151.37,OFANTO,P,76,114,152,,,,Ofanto a Monticchio,FRC_Qh,,,,,

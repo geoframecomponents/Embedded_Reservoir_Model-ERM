@@ -1,9 +1,0 @@
-@T,table
-Created,2018-05-22 12:59
-Author,HortonMachine library
-@H,timestamp,value_1
-ID,,1
-Type,Date,Double
-Format,yyyy-MM-dd HH:mm,
-,2016-09-10 11:20,0.02
-
