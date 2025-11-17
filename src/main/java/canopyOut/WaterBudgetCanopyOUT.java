@@ -138,8 +138,6 @@ public class WaterBudgetCanopyOUT {
 				ETp = 0.0;
 
 			if (step == 0) {
-				System.out.println("C--kc:" + kc + "-p:" + p);
-
 				if (initialConditionS_i != null) {
 					CI = initialConditionS_i.get(ID)[0];
 					if (isNovalue(CI))

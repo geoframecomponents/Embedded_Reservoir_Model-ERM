@@ -175,8 +175,6 @@ public class WaterBudgetRootZone {
 				Ewc = 0;
 
 			if (step == 0) {
-				System.out.println("RZ--grz:" + g + "-hrz:" + h + "-Smax:" + s_RootZoneMax + "-pB_soil:" + pB_soil);
-
 				if (initialConditionS_i != null) {
 					CI = initialConditionS_i.get(ID)[0];
 					if (isNovalue(CI))

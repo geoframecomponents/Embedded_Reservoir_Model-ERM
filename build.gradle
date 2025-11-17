@@ -43,13 +43,10 @@ dependencies {
 
     implementation 'org.slf4j:slf4j-api:1.7.21'
     //compile name: 'log4j'
-    implementation group: 'org.hortonmachine', name: 'hm-gears', version: '0.10.4'    
+    implementation group: 'org.hortonmachine', name: 'hm-gears', version: '0.10.11'    
     implementation 'org.apache.commons:commons-math3:3.6.1'
-    
-    // https://mvnrepository.com/artifact/junit/junit
-	testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
 
-	// https://mvnrepository.com/artifact/log4j/log4j
-	//implementation group: 'log4j', name: 'log4j', version: '1.2.17'
+
 
 }

@@ -121,8 +121,6 @@ public class WaterBudget {
 				recharge = 0;
 
 			if (step == 0) {
-				System.out.println("RU--c:" + c + "-d:" + d + "-s_RunoffMax:" + s_RunoffMax);
-
 				if (initialConditionS_i != null) {
 					CI = initialConditionS_i.get(ID)[0];
 					if (isNovalue(CI))

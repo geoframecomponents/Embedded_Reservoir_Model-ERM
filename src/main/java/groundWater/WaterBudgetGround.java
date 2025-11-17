@@ -117,8 +117,6 @@ public class WaterBudgetGround {
 				recharge = 0;
 
 			if (step == 0) {
-				System.out.println("GW--e:" + e + "-f:" + f + "-s_GroundWaterMax:" + s_GroundWaterMax);
-
 				if (initialConditionS_i != null) {
 					CI = initialConditionS_i.get(ID)[0];
 					if (isNovalue(CI))
