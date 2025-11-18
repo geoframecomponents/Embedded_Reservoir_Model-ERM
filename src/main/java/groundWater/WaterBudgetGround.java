@@ -93,8 +93,7 @@ public class WaterBudgetGround {
 	public HashMap<Integer, double[]> outHMError = new HashMap<Integer, double[]>();
 
 	int step;
-	double recharge;
-	double CI;
+	private HashMap<Integer, double[]>ciMap= new HashMap<Integer, double[]>();
 
 	/**
 	 * Process: reading of the data, computation of the storage and outflows
@@ -112,11 +111,12 @@ public class WaterBudgetGround {
 			Integer ID = entry.getKey();
 
 			/** Input data reading */
-			recharge = inHMRechargeValues.get(ID)[0];
+			double recharge = inHMRechargeValues.get(ID)[0];
 			if (isNovalue(recharge))
 				recharge = 0;
 
 			if (step == 0) {
+				double CI;
 				if (initialConditionS_i != null) {
 					CI = initialConditionS_i.get(ID)[0];
 					if (isNovalue(CI))
@@ -124,55 +124,68 @@ public class WaterBudgetGround {
 				} else {
 					CI = 0.01 * s_GroundWaterMax;
 				}
+				ciMap.put(ID, new double[] { CI });
 			}
+			double CI = ciMap.get(ID)[0];
 
-			double m3s = A * Math.pow(10, 3) / (tTimestep * 60);
-
-			// solve S at t^n+1
-			double[] out = RK4(CI);
-			double waterStorage = out[0];
-			if (waterStorage < 0)
-				waterStorage = 0;
-			double error = out[1];
-
-			// update variables at t^n+1
-			double deep_mm = out[2];
-			double deep = deep_mm * m3s;
+			WaterBudgetGroundStepResult r = calculateWaterBudgetGround(recharge, CI, e, f, s_GroundWaterMax, A, tTimestep);
 
 			// save results
-			storeResult_series(ID, waterStorage, deep_mm, deep, error);
+			storeResult_series(ID, r.waterStorage, r.discharge_mm, r.discharge, r.error);
 
 			// update storage
-			CI = waterStorage;
+			ciMap.put(ID, new double[] { r.waterStorage });
 		}
 		step++;
 	}
 
+	public static WaterBudgetGroundStepResult calculateWaterBudgetGround(double recharge, double CI,  double e, double f, double s_GroundWaterMax, double A, double tTimestepInMinutes) {
+		double m3s = A * Math.pow(10, 3) / (tTimestepInMinutes * 60);
+
+		// solve S at t^n+1
+		double[] out = RK4(CI, recharge, e, f, s_GroundWaterMax);
+		double waterStorage = out[0];
+		if (waterStorage < 0)
+			waterStorage = 0;
+		double error = out[1];
+
+		// update variables at t^n+1
+		double deep_mm = out[2];
+		double deep = deep_mm * m3s;
+		
+		WaterBudgetGroundStepResult r = new WaterBudgetGroundStepResult(
+				waterStorage,
+				deep,
+				deep_mm,
+				error);
+		return r;
+	}
+
 	// compute dS/dt
-	public double[] computeFunction(double Sn) {
+	public static double[] computeFunction(double Sn, double recharge, double e, double f, double s_GroundWaterMax) {
 		if (Sn < 0) {
 			Sn = 0;
 		}
-		double deep = computeDeep(Sn);
+		double deep = computeDeep(Sn, recharge, e, f, s_GroundWaterMax);
 		double fun = recharge - deep;
 		return new double[] { fun, deep };
 	}
 
 	// compute deep discharge
-	public double computeDeep(double Sn) {
+	public static double computeDeep(double Sn, double recharge, double e, double f, double s_GroundWaterMax) {
 		double out = e * Math.pow(Math.min(1, Sn / s_GroundWaterMax), f);
 		out = out + Math.max(0, Sn - s_GroundWaterMax + recharge - out);
 		return Math.min(Sn + recharge, out);
 	}
 
 	// RK4
-	public double[] RK4(double Sn) {
+	public static double[] RK4(double Sn, double recharge, double e, double f, double s_GroundWaterMax) {
 
 		double balance = 0;
-		double[] k1 = computeFunction(Sn);
-		double[] k2 = computeFunction(Sn + 0.5 * k1[0]);
-		double[] k3 = computeFunction(Sn + 0.5 * k2[0]);
-		double[] k4 = computeFunction(Sn + k3[0]);
+		double[] k1 = computeFunction(Sn, recharge, e, f, s_GroundWaterMax);
+		double[] k2 = computeFunction(Sn + 0.5 * k1[0], recharge, e, f, s_GroundWaterMax);
+		double[] k3 = computeFunction(Sn + 0.5 * k2[0], recharge, e, f, s_GroundWaterMax);
+		double[] k4 = computeFunction(Sn + k3[0], recharge, e, f, s_GroundWaterMax);
 		double Sn1 = Sn + getRKMean(k1, k2, k3, k4, 0);
 		double deltaDeep = getRKMean(k1, k2, k3, k4, 1);
 		balance = balance + Math.abs(Sn - Sn1 + recharge - deltaDeep);
@@ -181,12 +194,17 @@ public class WaterBudgetGround {
 	}
 
 	private void storeResult_series(int ID, double S, double d_mm, double d, double err) {
-
 		outHMStorage.put(ID, new double[] { S });
 		outHMDischarge.put(ID, new double[] { d });
 		outHMDischarge_mm.put(ID, new double[] { d_mm });
 		outHMError.put(ID, new double[] { err });
-
+	}
+	
+	public record WaterBudgetGroundStepResult(
+			double waterStorage,
+			double discharge,
+			double discharge_mm,
+			double error) {
 	}
 
 }
