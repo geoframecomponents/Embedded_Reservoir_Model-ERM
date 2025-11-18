@@ -138,11 +138,7 @@ public class WaterBudgetRootZone {
 	public HashMap<Integer, double[]> outHMError = new HashMap<Integer, double[]>();
 
 	int step;
-	double rain;
-	double CI;
-	double ETp;
-	double Ewc;
-	double ETpNet;
+	private HashMap<Integer, double[]>ciMap= new HashMap<Integer, double[]>();
 
 	/**
 	 * Process: reading of the data, computation of the storage and outflows
@@ -160,21 +156,24 @@ public class WaterBudgetRootZone {
 			Integer ID = entry.getKey();
 
 			/** Input data reading */
-			rain = inHMRain.get(ID)[0];
+			double rain = inHMRain.get(ID)[0];
 			if (isNovalue(rain))
 				rain = 0;
 
+			double ETp = 0;
 			if (inHMETp != null)
 				ETp = inHMETp.get(ID)[0];
 			if (isNovalue(ETp))
 				ETp = 0;
 
+			double Ewc = 0;
 			if (inHMEwc != null)
 				Ewc = inHMEwc.get(ID)[0];
 			if (isNovalue(Ewc))
 				Ewc = 0;
 
 			if (step == 0) {
+				double CI;
 				if (initialConditionS_i != null) {
 					CI = initialConditionS_i.get(ID)[0];
 					if (isNovalue(CI))
@@ -183,56 +182,75 @@ public class WaterBudgetRootZone {
 				} else {
 					CI = s_RootZoneMax * sat_degree;
 				}
+				ciMap.put(ID, new double[] {CI});
 			}
+			double CI = ciMap.get(ID)[0];
 
-			ETpNet = ETp - Ewc;
-			double m3s = A * Math.pow(10, 3) / (tTimestep * 60);
-
-			// solve S at t^n+1
-
-			double[] out = RK4(CI, ETpNet);
-			double waterStorage = out[0];
-			if (waterStorage < 0)
-				waterStorage = 0;
-			double error = out[1];
-
-			// update variables at t^n+1
-			double alfa = out[2];
-			double quick_mm = out[3];
-			double quick = quick_mm * m3s;
-			double actualInput = out[4];
-			double recharge = out[5];
-			double AET = out[6];
-
-			// double alpha=(rain<0.001)?0:alpha(CI,rain,s_RootZoneMax);
+			WaterBudgetRootZoneStepResult r = computeWaterBudgetRootZone(rain, ETp, Ewc, CI, pB_soil, s_RootZoneMax, g,
+					h, A, tTimestep);
 
 			// export to timeseries
-			storeResult_series(ID, waterStorage, actualInput, AET, recharge, quick_mm, quick, alfa, error);
+			storeResult_series(ID, r.waterStorage, r.actualInput, r.AET, r.recharge, r.quick_mm, r.quick, r.alpha, r.error);
 
 			// set new IC
-			CI = waterStorage;
+			ciMap.put(ID, new double[] {r.waterStorage});
 		}
 		step++;
 	}
 
+	public static  WaterBudgetRootZoneStepResult computeWaterBudgetRootZone(double rain, double ETp, double Ewc, double CI, double pB_soil, double s_RootZoneMax, double g, double h, double A, double tTimestep) {
+		double ETpNet = ETp - Ewc;
+		double m3s = A * Math.pow(10, 3) / (tTimestep * 60);
+
+		// solve S at t^n+1
+
+		double[] out = RK4(CI, ETpNet, rain, pB_soil, s_RootZoneMax, g, h);
+		double waterStorage = out[0];
+		if (waterStorage < 0)
+			waterStorage = 0;
+		double error = out[1];
+
+		// update variables at t^n+1
+		double alfa = out[2];
+		double quick_mm = out[3];
+		double quick = quick_mm * m3s;
+		double actualInput = out[4];
+		double recharge = out[5];
+		double AET = out[6];
+		
+		WaterBudgetRootZoneStepResult r = new WaterBudgetRootZoneStepResult(
+				waterStorage,
+				actualInput,
+				AET,
+				recharge,
+				quick_mm,
+				quick,
+				alfa,
+				error
+		);
+
+		// double alpha=(rain<0.001)?0:alpha(CI,rain,s_RootZoneMax);
+		return r;
+	}
+
 	// compute dS/dt
-	public double[] computeFunction(double Sn, double etpnet) {
+	public static double[] computeFunction(double Sn, double etpnet, double rain, double pB_soil, double s_RootZoneMax, double g, double h) {
 		if (Sn < 0) {
 			Sn = 0;
 		}
-		double alpha = alpha(Sn, rain);
-		double[] o = actualInputs(Sn, alpha);
+		double alpha = alpha(Sn, rain, pB_soil, s_RootZoneMax);
+		double[] o = actualInputs(Sn, alpha, rain);
 		double actualInputs = o[0];
 		double quick = o[1];
 
-		double aet = computeAET(Sn, actualInputs, etpnet);
-		double recharge = computeR(Sn, actualInputs, aet);
+		double aet = computeAET(Sn, actualInputs, etpnet, s_RootZoneMax);
+		double recharge = computeR(Sn, actualInputs, aet, g, h, s_RootZoneMax);
 		double fun = actualInputs - aet - recharge;
 		return new double[] { fun, actualInputs, recharge, aet, alpha, quick };
 	}
 
 	// compute alpha according to Hymod
-	private double alpha(double Sn, double Pval) {
+	private static double alpha(double Sn, double Pval, double pB_soil, double s_RootZoneMax) {
 		double pCmax = s_RootZoneMax * (pB_soil + 1);
 		double coeff1 = 1.0 - ((pB_soil + 1.0) * (Sn) / pCmax);
 		double exp = 1.0 / (pB_soil + 1.0);
@@ -252,12 +270,12 @@ public class WaterBudgetRootZone {
 	}
 
 	// compute actual inputs
-	public double[] actualInputs(double Sn, double alfa) {
+	public static double[] actualInputs(double Sn, double alfa, double rain) {
 		return new double[] { (1 - alfa) * rain, alfa * rain };
 	}
 
 	// compute groundwater recharge
-	public double computeR(double Sn, double in, double et) {
+	public static double computeR(double Sn, double in, double et, double g, double h, double s_RootZoneMax) {
 		double out = g * Math.pow(Math.min(1, Sn / s_RootZoneMax), h);
 		out = Math.min(Sn + in - et, out + Math.max(0, Sn - s_RootZoneMax + in - et - out));
 		return out;
@@ -265,18 +283,18 @@ public class WaterBudgetRootZone {
 	}
 
 	// compute AET
-	public double computeAET(double Sn, double in, double etpnet) {
+	public static double computeAET(double Sn, double in, double etpnet, double s_RootZoneMax) {
 		return Math.min(Sn + in, etpnet * Math.min(1, 1.33 * Math.min(1, Sn / s_RootZoneMax)));
 	}
 
 	// RK4
-	public double[] RK4(double Sn, double etpnet) {
+	public static double[] RK4(double Sn, double etpnet, double rain, double pB_soil, double s_RootZoneMax, double g, double h) {
 
 		double balance = 0;
-		double[] k1 = computeFunction(Sn, etpnet);
-		double[] k2 = computeFunction(Sn + 0.5 * k1[0], etpnet);
-		double[] k3 = computeFunction(Sn + 0.5 * k2[0], etpnet);
-		double[] k4 = computeFunction(Sn + k3[0], etpnet);
+		double[] k1 = computeFunction(Sn, etpnet, rain, pB_soil, s_RootZoneMax, g, h);
+		double[] k2 = computeFunction(Sn + 0.5 * k1[0], etpnet, rain, pB_soil, s_RootZoneMax, g, h);
+		double[] k3 = computeFunction(Sn + 0.5 * k2[0], etpnet, rain, pB_soil, s_RootZoneMax, g, h);
+		double[] k4 = computeFunction(Sn + k3[0], etpnet, rain, pB_soil, s_RootZoneMax, g, h);
 		double Sn1 = Sn + getRKMean(k1, k2, k3, k4, 0);
 		double alpha = getRKMean(k1, k2, k3, k4, 4);
 		double actualInput = getRKMean(k1, k2, k3, k4, 1);
@@ -293,15 +311,29 @@ public class WaterBudgetRootZone {
 	// store results
 	private void storeResult_series(int ID, double S, double in, double aet, double re, double quick_mm, double quick,
 			double alf, double err) {
-		outHMActualInput.put(ID, new double[] { in });
 		outHMStorage.put(ID, new double[] { S });
+		outHMActualInput.put(ID, new double[] { in });
 		outHMEvaporation.put(ID, new double[] { aet });
 		outHMR.put(ID, new double[] { re });
-		outHMquick.put(ID, new double[] { quick });
 		outHMquick_mm.put(ID, new double[] { quick_mm });
+		outHMquick.put(ID, new double[] { quick });
 		outHMalpha.put(ID, new double[] { alf });
 		outHMError.put(ID, new double[] { err });
 
 	}
+	
+	
+	public record WaterBudgetRootZoneStepResult(
+			double waterStorage,
+			double actualInput,
+			double AET,
+			double recharge,
+			double quick_mm,
+			double quick,
+			double alpha,
+			double error
+	) {
+	}
+	
 
 }
