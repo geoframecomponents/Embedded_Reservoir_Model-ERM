@@ -102,12 +102,9 @@ public class WaterBudgetCanopyOUT {
 	@Out
 	public HashMap<Integer, double[]> outHMError = new HashMap<Integer, double[]>();
 
-	int step;
-	double rain;
-	double CI;
-	double ETp;
-	double s_CanopyMax;
+	private HashMap<Integer, double[]>ciMap= new HashMap<Integer, double[]>();
 
+	int step;
 	/**
 	 * Process: reading of the data, computation of the storage and outflows
 	 *
@@ -124,20 +121,15 @@ public class WaterBudgetCanopyOUT {
 			Integer ID = entry.getKey();
 
 			/** Input data reading */
-			rain = inHMRain.get(ID)[0];
-			if (isNovalue(rain))
-				rain = 0.0;
-
+			double rain = inHMRain.get(ID)[0];
 			double LAI = inHMLAI.get(ID)[0];
+			double ETp = inHMETp.get(ID)[0];
+			
 			if (isNovalue(LAI))
 				LAI = 0.6;
 			LAI = (LAI == 0) ? 0.6 : LAI;
-
-			ETp = inHMETp.get(ID)[0];
-			if (isNovalue(ETp) || ETp < 0)
-				ETp = 0.0;
-
 			if (step == 0) {
+				double CI;
 				if (initialConditionS_i != null) {
 					CI = initialConditionS_i.get(ID)[0];
 					if (isNovalue(CI))
@@ -145,62 +137,83 @@ public class WaterBudgetCanopyOUT {
 				} else {
 					CI = kc * LAI / 2;
 				}
+				ciMap.put(ID, new double[] {CI});
 			}
+			double CI = ciMap.get(ID)[0];
+			
+			if (isNovalue(rain))
+				rain = 0.0;
+			if (isNovalue(ETp) || ETp < 0)
+				ETp = 0.0;
 
-			s_CanopyMax = kc * LAI;
-
-			double actualInput = (1 - p) * rain;
-
-			// solve S at t^n+1
-			double[] out = RK4(CI, actualInput);
-			double waterStorage = out[0];
-			if (waterStorage < 0)
-				waterStorage = 0;
-			double error = out[1];
-
-			// update variables at t^n+1
-			double actualOutput = out[3];
-			double throughfall = actualOutput + p * rain;
-			double AET = out[2];
+			WaterBudgetCanopyStepResult r = calculateWaterBudgetCanopy(rain, LAI, ETp, CI, kc, p);
+			
 			// export to timeseries
-			storeResult_series(ID, waterStorage, throughfall, AET, actualInput, actualOutput, error);
+			storeResult_series(ID, r.waterStorage, r.throughfall, r.AET, r.actualInput, r.actualOutput, r.error);
 
 			// set new IC
-			CI = waterStorage;
-
+			ciMap.put(ID, new double[] {r.waterStorage});
 		}
 		step++;
 	}
 
+	public static WaterBudgetCanopyStepResult calculateWaterBudgetCanopy(double rain, double LAI, double ETp, double CI, double kc, double p) {
+		double s_CanopyMax = kc * LAI;
+
+		double actualInput = (1 - p) * rain;
+
+		// solve S at t^n+1
+		double[] out = RK4(CI, actualInput, ETp, s_CanopyMax);
+		double waterStorage = out[0];
+		if (waterStorage < 0)
+			waterStorage = 0;
+		double error = out[1];
+
+		// update variables at t^n+1
+		double actualOutput = out[3];
+		double throughfall = actualOutput + p * rain;
+		double AET = out[2];
+		
+		WaterBudgetCanopyStepResult r = new WaterBudgetCanopyStepResult(
+				waterStorage,
+				throughfall,
+				AET,
+				actualInput,
+				actualOutput,
+				error
+		);
+		return r;
+	}
+
 	// compute dS/dt
-	public double[] computeFunction(double Sn, double in) {
+	public static double[] computeFunction(double Sn, double in, double ETp, double s_CanopyMax) {
 		if (Sn < 0) {
 			Sn = 0;
 		}
-		double et = computeAET(Sn, in);
-		double actualOut = computeActualOutput(Sn, in, et);
+		double et = computeAET(Sn, in, ETp, s_CanopyMax);
+		double actualOut = computeActualOutput(Sn, in, et, s_CanopyMax);
 		return new double[] { in - et - actualOut, et, actualOut };
 	}
 
 	// compute AET
-	public double computeAET(double Sn, double in) {
+	public static double computeAET(double Sn, double in, double ETp, double s_CanopyMax) {
 		return Math.min(Math.max(0, Sn + in), ETp * Math.min(1, Sn / s_CanopyMax));
 	}
 
 	// compute actual output
-	public double computeActualOutput(double Sn, double in, double et) {
+	public static double computeActualOutput(double Sn, double in, double et, double s_CanopyMax) {
 		return Math.max(0, Sn + in - et - s_CanopyMax);
 	}
 
 	// RK4
-	public double[] RK4(double Sn, double in) {
+	public static double[] RK4(double Sn, double in, double ETp, double s_CanopyMax) {
 
 		double balance = 0;
 
-		double[] k1 = computeFunction(Sn, in);
-		double[] k2 = computeFunction(Sn + 0.5 * k1[0], in);
-		double[] k3 = computeFunction(Sn + 0.5 * k2[0], in);
-		double[] k4 = computeFunction(Sn + k3[0], in);
+		double[] k1 = computeFunction(Sn, in, ETp, s_CanopyMax);
+		double[] k2 = computeFunction(Sn + 0.5 * k1[0], in, ETp, s_CanopyMax);
+		double[] k3 = computeFunction(Sn + 0.5 * k2[0], in, ETp, s_CanopyMax);
+		double[] k4 = computeFunction(Sn + k3[0], in, ETp, s_CanopyMax);
 		double Sn1 = Sn + getRKMean(k1, k2, k3, k4, 0);
 		double aet = getRKMean(k1, k2, k3, k4, 1);
 		double actualOut = getRKMean(k1, k2, k3, k4, 2);
@@ -212,13 +225,22 @@ public class WaterBudgetCanopyOUT {
 
 	// store results
 	private void storeResult_series(int ID, double S, double tr, double aet, double in, double out, double err) {
-
 		outHMStorage.put(ID, new double[] { S });
 		outHMThroughfall.put(ID, new double[] { tr });
 		outHMAET.put(ID, new double[] { aet });
 		outHMActualInput.put(ID, new double[] { in });
 		outHMActualOutput.put(ID, new double[] { out });
 		outHMError.put(ID, new double[] { err });
+	}
+	
+	public record WaterBudgetCanopyStepResult(//
+			double waterStorage, //
+			double throughfall, //
+			double AET, //
+			double actualInput, //
+			double actualOutput, //
+			double error //
+	) {
 
 	}
 
