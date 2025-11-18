@@ -186,7 +186,7 @@ public class WaterBudgetRootZone {
 			}
 			double CI = ciMap.get(ID)[0];
 
-			WaterBudgetRootZoneStepResult r = computeWaterBudgetRootZone(rain, ETp, Ewc, CI, pB_soil, s_RootZoneMax, g,
+			WaterBudgetRootZoneStepResult r = calculateWaterBudgetRootZone(rain, ETp, Ewc, CI, pB_soil, s_RootZoneMax, g,
 					h, A, tTimestep);
 
 			// export to timeseries
@@ -198,7 +198,7 @@ public class WaterBudgetRootZone {
 		step++;
 	}
 
-	public static  WaterBudgetRootZoneStepResult computeWaterBudgetRootZone(double rain, double ETp, double Ewc, double CI, double pB_soil, double s_RootZoneMax, double g, double h, double A, double tTimestep) {
+	public static  WaterBudgetRootZoneStepResult calculateWaterBudgetRootZone(double rain, double ETp, double Ewc, double CI, double pB_soil, double s_RootZoneMax, double g, double h, double A, double tTimestep) {
 		double ETpNet = ETp - Ewc;
 		double m3s = A * Math.pow(10, 3) / (tTimestep * 60);
 
