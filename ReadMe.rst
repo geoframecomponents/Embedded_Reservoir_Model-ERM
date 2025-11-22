@@ -1,5 +1,5 @@
-WATER\_BUDGET
-=============
+WATER_BUDGET
+============
 
 ``@author`` Marialaura Bancheri
 
@@ -19,7 +19,7 @@ To build the project just run
 
 ::
 
-    ~ $ gradle build
+   ~ $ gradle build
 
 in the working directory. You will find the built ``.jar`` in
 ``build/libs``. But a built version of the lates release is already
@@ -30,7 +30,7 @@ To build the ReadMe file from the markdown one in the doc/ReadMe folder
 
 ::
 
-    pandoc doc/ReadMe/ReadMe.md -o ReadMe.rst --bibliography=doc/ReadMe/biblio.bib
+   pandoc doc/ReadMe/ReadMe.md -o ReadMe.rst --bibliography=doc/ReadMe/biblio.bib
 
 Implementation
 ~~~~~~~~~~~~~~
@@ -38,16 +38,24 @@ Implementation
 Documentation
 -------------
 
-Developers' documentation
+`Model Equation <doc/ReadMe/Model_equation.md>`__
+
+Canopy
+------
+
+Canopy interception model (Rutter 1971; Aston 1979)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Developers’ documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Linkers' documentation
+Linkers’ documentation
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The documentation is available at
 http://www.slideshare.net/marialaurabancheri/jgrassnewage-water-budget
 
-Users' documentation
+Users’ documentation
 ~~~~~~~~~~~~~~~~~~~~
 
 References

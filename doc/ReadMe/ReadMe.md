@@ -6,7 +6,7 @@
 
 ## Description
 
-This is a Gradle project 
+This is a Gradle project
 
 ![Gradle logo](doc/ReadMe/gradle.png)
 
@@ -25,6 +25,13 @@ To build the ReadMe file from the markdown one in the doc/ReadMe folder
 ### Implementation
 
 ## Documentation
+
+[Model Equation](doc/ReadMe/Model_equation.md)
+
+## Canopy
+
+### Canopy interception model (Rutter 1971; Aston 1979)
+
 
 ### Developers' documentation
 
