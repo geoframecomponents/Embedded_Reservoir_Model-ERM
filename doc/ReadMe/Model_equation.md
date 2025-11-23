@@ -78,13 +78,14 @@ $$
 
 
 ## Groundwater
+$$
+\frac{dS_g(t)}{dt} = R_g(t) - Q_g(t)
+$$
 
 $$
 Q_g(t)= e cdot \left(\frac{S_{g}(t)}{S_{g_max}(t)}\right)^f
 $$
 
-$$
-$$
 ## Groundwater baseflow – Symbols Table
 
 | Symbol       | Meaning                | Unit               |
