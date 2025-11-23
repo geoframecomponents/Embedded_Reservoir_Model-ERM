@@ -39,7 +39,7 @@ ET_{rz}(t) &= \min\left( 1,\; \frac{4}{3}\frac{S_{rz}(t)}{S_{rzmax}} \right)\, (
 $$
 
 $$
-R_g(t) = g\, S_{rz}(t)^k
+R_g(t) = g\, \left(\frac{S_{rz}(t)}{S_{rz_max}(t)}\right)^k
 $$
 
 
