@@ -28,11 +28,14 @@ import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.ode.FirstOrderIntegrator;
 import org.apache.commons.math3.ode.nonstiff.DormandPrince853Integrator;
 
+import it.geoframe.blogspot.rungekutta.adaptive.AdaptiveRungeKutta4;
+import it.geoframe.blogspot.rungekutta.adaptive.OneOutRungeKutta;
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
 import oms3.annotations.Out;
 import oms3.annotations.Unit;
+
 
 /**
  * The Class WaterBudget solves the water budget equation for the runoff layer.
@@ -74,7 +77,7 @@ public class WaterBudget {
 
 	@Description("RK iterations")
 	@In
-	public double RKiter = 100;
+	public static double RKiter = 10;
 
 	// @Description("ODE solver model: dp853, Eulero ")
 	// @In
@@ -99,6 +102,10 @@ public class WaterBudget {
 	int step;
 	private HashMap<Integer, double[]>ciMap= new HashMap<Integer, double[]>();
 
+	 AdaptiveRungeKutta4 rk = null;
+ double m3s = 0;
+
+	
 	/**
 	 * Process: reading of the data, computation of the storage and outflows
 	 *
@@ -121,6 +128,9 @@ public class WaterBudget {
 
 			if (step == 0) {
 				double CI;
+				rk = new OneOutRungeKutta(c, d, s_RunoffMax);
+				m3s = A * Math.pow(10, 3) / (tTimestep * 60);
+
 				if (initialConditionS_i != null) {
 					CI = initialConditionS_i.get(ID)[0];
 					if (isNovalue(CI))
@@ -132,7 +142,7 @@ public class WaterBudget {
 			}
 			double CI = ciMap.get(ID)[0];
 
-			WaterBudgetStepResult r = calculateWaterBudget(recharge, CI, c, d, s_RunoffMax, A, tTimestep);
+			WaterBudgetStepResult r = calculateWaterBudget(rk,m3s,   recharge, CI);
 
 			// save results
 			storeResult_series(ID, r.waterStorage, r.runoff_mm, r.runoff, r.error);
@@ -143,19 +153,17 @@ public class WaterBudget {
 		step++;
 	}
 
-	public static WaterBudgetStepResult calculateWaterBudget(double recharge, double CI, double c, double d, double s_RunoffMax,
-			double A, double tTimestep) {
-		double m3s = A * Math.pow(10, 3) / (tTimestep * 60);
+	public static WaterBudgetStepResult calculateWaterBudget(AdaptiveRungeKutta4 rk, double m3s2,double recharge, double CI) {
 		// solve S at t^n+1
-		double[] output = RK4(CI, recharge, c, d, s_RunoffMax);
+		double[] output = rk.run(CI, recharge, RKiter);;
 		double waterStorage = output[0];
 		if (waterStorage < 0)
 			waterStorage = 0;
-		double error = output[1];
+		double error = output[2];
 
 		// update variables at t^n+1
-		double runoff_mm = output[2];
-		double runoff = runoff_mm * m3s;
+		double runoff_mm = output[1];
+		double runoff = runoff_mm * m3s2;
 		WaterBudgetStepResult r = new WaterBudgetStepResult(
 				waterStorage,
 				runoff,
@@ -165,44 +173,9 @@ public class WaterBudget {
 		return r;
 	}
 
-	// compute dS/dt
-	public static double computeFunction(double Sn, double recharge, double c, double d, double s_RunoffMax) {
-		if (Sn < 0) {
-			Sn = 0;
-		}
-		double fun = recharge - computeRunoff(Sn, recharge, c, d, s_RunoffMax);
-		return fun;
-	}
 
-	// compute deep discharge
-	public static double computeRunoff(double Sn, double recharge, double c, double d, double s_RunoffMax) {
-		// double out = Math.max(c,recharge) * Math.pow(Sn / s_RunoffMax, d);
-		double out = c * Math.pow(Math.min(1, Sn / s_RunoffMax), d);
-		out = out + Math.max(0, Sn - s_RunoffMax + recharge - out);
-		out = Math.min(Sn + recharge, out);
-		return out;
-	}
 
-	// RK4
-	public static double[] RK4(double Sn, double recharge, double c, double d, double s_RunoffMax) {
-		double k1 = 0;
-		double k2 = 0;
-		double k3 = 0;
-		double k4 = 0;
-		k1 = computeFunction(Sn, recharge, c, d, s_RunoffMax);
-		k2 = computeFunction(Sn + 0.5 * k1, recharge, c, d, s_RunoffMax);
-		k3 = computeFunction(Sn + 0.5 * k2, recharge, c, d, s_RunoffMax);
-		k4 = computeFunction(Sn + k3, recharge, c, d, s_RunoffMax);
-		double Sn1 = Sn + (k1 + 2 * k2 + 2 * k3 + k4) / 6;
 
-		double runoff = 1.0 / 6.0 * (computeRunoff(Sn, recharge, c, d, s_RunoffMax) 
-				+ 2 * computeRunoff(Sn + 0.5 * k1,recharge, c, d, s_RunoffMax)
-				+ 2 * computeRunoff(Sn + 0.5 * k2, recharge, c, d, s_RunoffMax) 
-				+ computeRunoff(Sn + k3, recharge, c, d, s_RunoffMax));
-
-		double balance = Sn - Sn1 + recharge - runoff;
-		return new double[] { Sn1, balance, runoff };
-	}
 
 	private void storeResult_series(int ID, double S, double r_mm, double r, double err) {
 
@@ -220,23 +193,4 @@ public class WaterBudget {
 			double error
 	) {
 	}
-
-//	class runoffODE implements FirstOrderDifferentialEquations {
-//
-//		private double in;
-//
-//		public runoffODE(double in) {
-//			this.in = in;
-//		}
-//
-//		public int getDimension() {
-//			return 1;
-//		}
-//
-//		public void computeDerivatives(double t, double[] y, double[] yDot) {
-//			yDot[0] = in - c * Math.pow(Math.min(1, y[0] / s_RunoffMax), d);
-//
-//		}
-//
-//	}
 }

@@ -29,8 +29,8 @@ import java.util.Set;
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
-import oms3.annotations.Out;;
-
+import oms3.annotations.Out;
+import it.geoframe.blogspot.rungekutta.adaptive.CanopyRungeKutta;
 /**
  * The component solves the budget for the outer part of the canopy layer.
  * Inputs are: the rain and the potential evapotranspiration Outputs are: the
@@ -72,7 +72,7 @@ public class WaterBudgetCanopyOUT {
 
 	@Description("RK iterations")
 	@In
-	public double RKiter = 100;
+	public static double RKiter = 10;
 
 	// @Description("ODE solver model:dp853, Eulero ")
 	// @In
@@ -105,6 +105,8 @@ public class WaterBudgetCanopyOUT {
 	private HashMap<Integer, double[]>ciMap= new HashMap<Integer, double[]>();
 
 	int step;
+	private  CanopyRungeKutta rk = null;
+
 	/**
 	 * Process: reading of the data, computation of the storage and outflows
 	 *
@@ -115,6 +117,7 @@ public class WaterBudgetCanopyOUT {
 
 		// reading the ID of all the stations
 		Set<Entry<Integer, double[]>> entrySet = inHMRain.entrySet();
+		double sCanopyMax;
 
 		// iterate over the station
 		for (Entry<Integer, double[]> entry : entrySet) {
@@ -129,6 +132,10 @@ public class WaterBudgetCanopyOUT {
 				LAI = 0.6;
 			LAI = (LAI == 0) ? 0.6 : LAI;
 			if (step == 0) {
+				sCanopyMax = kc * LAI;
+
+				rk = new CanopyRungeKutta(sCanopyMax);
+
 				double CI;
 				if (initialConditionS_i != null) {
 					CI = initialConditionS_i.get(ID)[0];
@@ -146,7 +153,7 @@ public class WaterBudgetCanopyOUT {
 			if (isNovalue(ETp) || ETp < 0)
 				ETp = 0.0;
 
-			WaterBudgetCanopyStepResult r = calculateWaterBudgetCanopy(rain, LAI, ETp, CI, kc, p);
+			WaterBudgetCanopyStepResult r = calculateWaterBudgetCanopy(rk,rain, LAI, ETp, CI, kc, p);
 			
 			// export to timeseries
 			storeResult_series(ID, r.waterStorage, r.throughfall, r.AET, r.actualInput, r.actualOutput, r.error);
@@ -157,13 +164,13 @@ public class WaterBudgetCanopyOUT {
 		step++;
 	}
 
-	public static WaterBudgetCanopyStepResult calculateWaterBudgetCanopy(double rain, double LAI, double ETp, double CI, double kc, double p) {
+	public static WaterBudgetCanopyStepResult calculateWaterBudgetCanopy(CanopyRungeKutta rk2, double rain, double LAI, double ETp, double CI, double kc, double p) {
 		double s_CanopyMax = kc * LAI;
 
 		double actualInput = (1 - p) * rain;
 
 		// solve S at t^n+1
-		double[] out = RK4(CI, actualInput, ETp, s_CanopyMax);
+		double[] out =  rk2.run(ETp, CI, actualInput, RKiter);
 		double waterStorage = out[0];
 		if (waterStorage < 0)
 			waterStorage = 0;
@@ -185,43 +192,7 @@ public class WaterBudgetCanopyOUT {
 		return r;
 	}
 
-	// compute dS/dt
-	public static double[] computeFunction(double Sn, double in, double ETp, double s_CanopyMax) {
-		if (Sn < 0) {
-			Sn = 0;
-		}
-		double et = computeAET(Sn, in, ETp, s_CanopyMax);
-		double actualOut = computeActualOutput(Sn, in, et, s_CanopyMax);
-		return new double[] { in - et - actualOut, et, actualOut };
-	}
 
-	// compute AET
-	public static double computeAET(double Sn, double in, double ETp, double s_CanopyMax) {
-		return Math.min(Math.max(0, Sn + in), ETp * Math.min(1, Sn / s_CanopyMax));
-	}
-
-	// compute actual output
-	public static double computeActualOutput(double Sn, double in, double et, double s_CanopyMax) {
-		return Math.max(0, Sn + in - et - s_CanopyMax);
-	}
-
-	// RK4
-	public static double[] RK4(double Sn, double in, double ETp, double s_CanopyMax) {
-
-		double balance = 0;
-
-		double[] k1 = computeFunction(Sn, in, ETp, s_CanopyMax);
-		double[] k2 = computeFunction(Sn + 0.5 * k1[0], in, ETp, s_CanopyMax);
-		double[] k3 = computeFunction(Sn + 0.5 * k2[0], in, ETp, s_CanopyMax);
-		double[] k4 = computeFunction(Sn + k3[0], in, ETp, s_CanopyMax);
-		double Sn1 = Sn + getRKMean(k1, k2, k3, k4, 0);
-		double aet = getRKMean(k1, k2, k3, k4, 1);
-		double actualOut = getRKMean(k1, k2, k3, k4, 2);
-		;
-		balance = balance + Sn - Sn1 + in - aet - actualOut;
-
-		return new double[] { Sn1, balance, aet, actualOut };
-	}
 
 	// store results
 	private void storeResult_series(int ID, double S, double tr, double aet, double in, double out, double err) {

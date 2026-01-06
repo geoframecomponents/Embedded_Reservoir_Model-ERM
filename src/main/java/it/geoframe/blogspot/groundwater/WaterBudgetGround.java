@@ -30,7 +30,9 @@ import oms3.annotations.Description;
 import oms3.annotations.Execute;
 import oms3.annotations.In;
 import oms3.annotations.Out;
-
+import it.geoframe.blogspot.utils.Utility;
+import it.geoframe.blogspot.rungekutta.adaptive.OneOutRungeKutta;
+import it.geoframe.blogspot.rungekutta.adaptive.AdaptiveRungeKutta4;
 /**
  * The Class WaterBudget solves the water budget equation for the groudwater
  * layer. The input s the recharge from the root zone and the output is the
@@ -70,7 +72,7 @@ public class WaterBudgetGround {
 
 	@Description("RK iterations")
 	@In
-	public double RKiter = 100;
+	public static double RKiter = 10;
 
 	// @Description("ODE solver model: dp853, Eulero ")
 	// @In
@@ -95,6 +97,11 @@ public class WaterBudgetGround {
 	int step;
 	private HashMap<Integer, double[]>ciMap= new HashMap<Integer, double[]>();
 
+	 AdaptiveRungeKutta4 rk = null;
+	 double m3s = 0;
+
+	
+	
 	/**
 	 * Process: reading of the data, computation of the storage and outflows
 	 *
@@ -117,6 +124,8 @@ public class WaterBudgetGround {
 
 			if (step == 0) {
 				double CI;
+				rk = new OneOutRungeKutta(e, f, s_GroundWaterMax);
+				m3s = Utility.getCOnversionToM3SCoeff(A, tTimestep);
 				if (initialConditionS_i != null) {
 					CI = initialConditionS_i.get(ID)[0];
 					if (isNovalue(CI))
@@ -128,7 +137,7 @@ public class WaterBudgetGround {
 			}
 			double CI = ciMap.get(ID)[0];
 
-			WaterBudgetGroundStepResult r = calculateWaterBudgetGround(recharge, CI, e, f, s_GroundWaterMax, A, tTimestep);
+			WaterBudgetGroundStepResult r = calculateWaterBudgetGround(rk,m3s,recharge, CI);
 
 			// save results
 			storeResult_series(ID, r.waterStorage, r.discharge_mm, r.discharge, r.error);
@@ -139,19 +148,18 @@ public class WaterBudgetGround {
 		step++;
 	}
 
-	public static WaterBudgetGroundStepResult calculateWaterBudgetGround(double recharge, double CI,  double e, double f, double s_GroundWaterMax, double A, double tTimestepInMinutes) {
-		double m3s = A * Math.pow(10, 3) / (tTimestepInMinutes * 60);
+	public static WaterBudgetGroundStepResult calculateWaterBudgetGround(AdaptiveRungeKutta4 rk2, double m3s2, double recharge, double CI) {
 
 		// solve S at t^n+1
-		double[] out = RK4(CI, recharge, e, f, s_GroundWaterMax);
+		double[] out = rk2.run(CI, recharge, RKiter);
 		double waterStorage = out[0];
 		if (waterStorage < 0)
 			waterStorage = 0;
-		double error = out[1];
+		double error = out[2];
 
 		// update variables at t^n+1
-		double deep_mm = out[2];
-		double deep = deep_mm * m3s;
+		double deep_mm = out[1];
+		double deep = deep_mm * m3s2;
 		
 		WaterBudgetGroundStepResult r = new WaterBudgetGroundStepResult(
 				waterStorage,
@@ -161,37 +169,9 @@ public class WaterBudgetGround {
 		return r;
 	}
 
-	// compute dS/dt
-	public static double[] computeFunction(double Sn, double recharge, double e, double f, double s_GroundWaterMax) {
-		if (Sn < 0) {
-			Sn = 0;
-		}
-		double deep = computeDeep(Sn, recharge, e, f, s_GroundWaterMax);
-		double fun = recharge - deep;
-		return new double[] { fun, deep };
-	}
+	
 
-	// compute deep discharge
-	public static double computeDeep(double Sn, double recharge, double e, double f, double s_GroundWaterMax) {
-		double out = e * Math.pow(Math.min(1, Sn / s_GroundWaterMax), f);
-		out = out + Math.max(0, Sn - s_GroundWaterMax + recharge - out);
-		return Math.min(Sn + recharge, out);
-	}
 
-	// RK4
-	public static double[] RK4(double Sn, double recharge, double e, double f, double s_GroundWaterMax) {
-
-		double balance = 0;
-		double[] k1 = computeFunction(Sn, recharge, e, f, s_GroundWaterMax);
-		double[] k2 = computeFunction(Sn + 0.5 * k1[0], recharge, e, f, s_GroundWaterMax);
-		double[] k3 = computeFunction(Sn + 0.5 * k2[0], recharge, e, f, s_GroundWaterMax);
-		double[] k4 = computeFunction(Sn + k3[0], recharge, e, f, s_GroundWaterMax);
-		double Sn1 = Sn + getRKMean(k1, k2, k3, k4, 0);
-		double deltaDeep = getRKMean(k1, k2, k3, k4, 1);
-		balance = balance + Math.abs(Sn - Sn1 + recharge - deltaDeep);
-		return new double[] { Sn1, balance, deltaDeep };
-
-	}
 
 	private void storeResult_series(int ID, double S, double d_mm, double d, double err) {
 		outHMStorage.put(ID, new double[] { S });
