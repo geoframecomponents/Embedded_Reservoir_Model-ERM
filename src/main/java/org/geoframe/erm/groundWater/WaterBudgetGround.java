@@ -17,10 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package groundWater;
+package org.geoframe.erm.groundWater;
 
+import static org.geoframe.erm.utility.Utils.getRKMean;
 import static org.hortonmachine.gears.libs.modules.HMConstants.isNovalue;
-import static utility.Utils.getRKMean;
 
 import java.util.HashMap;
 import java.util.Set;

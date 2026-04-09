@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */	
 
-package utility;
+package org.geoframe.erm.utility;
 
 
 public class Utils {
