@@ -48,7 +48,13 @@ public class RootZoneRungeKutta extends AdaptiveRungeKutta4 {
 
 	public double[] run(double storageStart, double in, double out, double rkiter) {
 		this.rain = in;
-		return super.run(storageStart, out, rkiter);
+		double[] result = super.run(storageStart, out, rkiter);
+		double S_new = result[0];
+		double AET = result[3];
+		double recharge = result[2];
+		double quick = result[5];
+		result[getOutDimension()] = Math.abs(S_new - storageStart - this.rain + AET + recharge + quick);
+		return result;
 	}
 
 	// compute dS/dt

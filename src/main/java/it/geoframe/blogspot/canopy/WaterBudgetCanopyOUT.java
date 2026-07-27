@@ -174,12 +174,13 @@ public class WaterBudgetCanopyOUT {
 		double waterStorage = out[0];
 		if (waterStorage < 0)
 			waterStorage = 0;
-		double error = out[1];
+		double error = out[3];
 
 		// update variables at t^n+1
-		double actualOutput = out[3];
-		double throughfall = actualOutput + p * rain;
-		double AET = out[2];
+		double drainage = out[2];
+		double AET = out[1];
+		double throughfall = drainage + p * rain;
+		double actualOutput = drainage;
 		
 		WaterBudgetCanopyStepResult r = new WaterBudgetCanopyStepResult(
 				waterStorage,

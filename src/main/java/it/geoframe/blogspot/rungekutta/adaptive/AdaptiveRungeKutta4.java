@@ -119,7 +119,7 @@ public abstract class AdaptiveRungeKutta4 {
 		for (i = 1; i < output.length - 1; i++) {
 			double tmpValue = dt * slopesValue[i];
 			output[i] = output[i] + tmpValue;
-			totalOutput = +tmpValue;
+			totalOutput += tmpValue;
 		}
 		output[i] = output[i]+Math.abs(storageStart - output[0] + dt * in - totalOutput);
 	}
