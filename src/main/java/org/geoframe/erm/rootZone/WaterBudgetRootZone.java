@@ -34,7 +34,7 @@ import oms3.annotations.Out;;
  * The Class WaterBudget solves the water budget equation for the root zone
  * layer.
  * 
- * @author Marialaura Bancheri, Riccardo Busti
+ * @author Marialaura Bancheri, Riccardo Busti, Daniele Andreis, Giuseppe Formetta
  */
 public class WaterBudgetRootZone {
 

@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */	
+ */
 package org.geoframe.erm.simpleBucket;
 
 import static org.hortonmachine.gears.libs.modules.HMConstants.isNovalue;
@@ -23,10 +23,6 @@ import static org.hortonmachine.gears.libs.modules.HMConstants.isNovalue;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
-import org.apache.commons.math3.ode.FirstOrderIntegrator;
-import org.apache.commons.math3.ode.nonstiff.DormandPrince853Integrator;
 
 import oms3.annotations.Description;
 import oms3.annotations.Execute;
@@ -39,7 +35,8 @@ import oms3.annotations.Unit;
  * The input s the recharge from the root zone and the output is the discharge,
  * modeled with a non linear reservoir model.
  * 
- * @author Marialaura Bancheri, Riccardo Busti
+ * @author Marialaura Bancheri, Riccardo Busti, Daniele Andreis, Giuseppe
+ *         Formetta
  */
 public class WaterBudget {
 
@@ -97,7 +94,7 @@ public class WaterBudget {
 	public HashMap<Integer, double[]> outHMError = new HashMap<Integer, double[]>();
 
 	int step;
-	private HashMap<Integer, double[]>ciMap= new HashMap<Integer, double[]>();
+	private HashMap<Integer, double[]> ciMap = new HashMap<Integer, double[]>();
 
 	/**
 	 * Process: reading of the data, computation of the storage and outflows
@@ -143,8 +140,8 @@ public class WaterBudget {
 		step++;
 	}
 
-	public static WaterBudgetStepResult calculateWaterBudget(double recharge, double CI, double c, double d, double s_RunoffMax,
-			double A, double tTimestep) {
+	public static WaterBudgetStepResult calculateWaterBudget(double recharge, double CI, double c, double d,
+			double s_RunoffMax, double A, double tTimestep) {
 		double m3s = A * Math.pow(10, 3) / (tTimestep * 60);
 		// solve S at t^n+1
 		double[] output = RK4(CI, recharge, c, d, s_RunoffMax);
@@ -156,12 +153,7 @@ public class WaterBudget {
 		// update variables at t^n+1
 		double runoff_mm = output[2];
 		double runoff = runoff_mm * m3s;
-		WaterBudgetStepResult r = new WaterBudgetStepResult(
-				waterStorage,
-				runoff,
-				runoff_mm,
-				error
-		);
+		WaterBudgetStepResult r = new WaterBudgetStepResult(waterStorage, runoff, runoff_mm, error);
 		return r;
 	}
 
@@ -195,10 +187,11 @@ public class WaterBudget {
 		k4 = computeFunction(Sn + k3, recharge, c, d, s_RunoffMax);
 		double Sn1 = Sn + (k1 + 2 * k2 + 2 * k3 + k4) / 6;
 
-		double runoff = 1.0 / 6.0 * (computeRunoff(Sn, recharge, c, d, s_RunoffMax) 
-				+ 2 * computeRunoff(Sn + 0.5 * k1,recharge, c, d, s_RunoffMax)
-				+ 2 * computeRunoff(Sn + 0.5 * k2, recharge, c, d, s_RunoffMax) 
-				+ computeRunoff(Sn + k3, recharge, c, d, s_RunoffMax));
+		double runoff = 1.0 / 6.0
+				* (computeRunoff(Sn, recharge, c, d, s_RunoffMax)
+						+ 2 * computeRunoff(Sn + 0.5 * k1, recharge, c, d, s_RunoffMax)
+						+ 2 * computeRunoff(Sn + 0.5 * k2, recharge, c, d, s_RunoffMax)
+						+ computeRunoff(Sn + k3, recharge, c, d, s_RunoffMax));
 
 		double balance = Sn - Sn1 + recharge - runoff;
 		return new double[] { Sn1, balance, runoff };
@@ -212,13 +205,8 @@ public class WaterBudget {
 		outHMError.put(ID, new double[] { err });
 
 	}
-	
-	public record WaterBudgetStepResult(
-			double waterStorage,
-			double runoff,
-			double runoff_mm,
-			double error
-	) {
+
+	public record WaterBudgetStepResult(double waterStorage, double runoff, double runoff_mm, double error) {
 	}
 
 //	class runoffODE implements FirstOrderDifferentialEquations {

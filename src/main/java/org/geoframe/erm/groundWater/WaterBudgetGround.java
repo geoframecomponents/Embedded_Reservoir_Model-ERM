@@ -36,7 +36,7 @@ import oms3.annotations.Out;
  * layer. The input s the recharge from the root zone and the output is the
  * discharge, modeled with a non linear reservoir model.
  * 
- * @author Marialaura Bancheri, Riccardo Busti
+ * @author Marialaura Bancheri, Riccardo Busti, Daniele Andreis, Giuseppe Formetta
  */
 public class WaterBudgetGround {
 

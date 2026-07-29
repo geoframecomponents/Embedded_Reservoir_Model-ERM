@@ -36,7 +36,7 @@ import oms3.annotations.Out;;
  * Inputs are: the rain and the potential evapotranspiration Outputs are: the
  * storage and the throughfall.
  * 
- * @author Marialaura Bancheri, Riccardo Busti
+ * @author Marialaura Bancheri, Riccardo Busti, Daniele Andreis, Giuseppe Formetta
  * 
  */
 
