@@ -1,0 +1,232 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.geoframe</groupId>
+	<artifactId>erm</artifactId>
+	<version>${revision}</version>
+	<packaging>jar</packaging>
+
+	<name>ERM</name>
+	<description>Embedded Reservoir Model</description>
+	<url>https://github.com/geoframecomponents/Embedded_Reservoir_Model-ERM</url>
+
+	<organization>
+		<name>GEOframe</name>
+		<url>https://geoframe.blogspot.com</url>
+	</organization>
+
+	<developers>
+		<developer>
+			<id>bubobne</id>
+			<name>Daniele Andreis</name>
+			<email>daniele.andreis@gmail.com</email>
+			<organization>GEOframe</organization>
+			<organizationUrl>https://geoframe.blogspot.com/</organizationUrl>
+		</developer>
+		<developer>
+			<id>formeppe</id>
+			<name>Giuseppe Formetta</name>
+			<email>giuseppe.formetta@unitn.it</email>
+			<organization>GEOframe</organization>
+			<organizationUrl>https://geoframe.blogspot.com/</organizationUrl>
+		</developer>
+	</developers>
+
+	<properties>
+		<revision>1.1.2</revision>
+		<hm.version>0.10.11</hm.version>
+		<gt.version>34.0</gt.version>
+		<java.version>17</java.version>
+		<maven.compiler.source>${java.version}</maven.compiler.source>
+		<maven.compiler.target>${java.version}</maven.compiler.target>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	<licenses>
+		<license>
+			<name>GNU General Public License v3.0</name>
+			<url>https://www.gnu.org/licenses/gpl-3.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<scm>
+		<connection>
+			scm:git:https://github.com/geoframecomponents/Embedded_Reservoir_Model-ERM</connection>
+		<developerConnection>
+			scm:git:ssh://git@github.com:geoframecomponents/Embedded_Reservoir_Model-ERM.git</developerConnection>
+		<url>https://github.com/geoframecomponents/Embedded_Reservoir_Model-ERM</url>
+		<tag>HEAD</tag>
+	</scm>
+
+	<repositories>
+	<repository>
+			<id>central.maven.org</id>
+			<name>Central Maven repository</name>
+			<url>https://repo1.maven.org/maven2/</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+
+		<repository>
+			<id>osgeo</id>
+			<name>OSGeo Nexus Release Repository</name>
+			<url>https://repo.osgeo.org/repository/release/</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+		</repository>
+
+		<repository>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>geosolutions</id>
+			<name>GeoSolutions repository used for imageio-ext, jai-ext</name>
+			<url>https://maven.geo-solutions.it/</url>
+		</repository>
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>sonatype-nexus-snapshots</id>
+			<name>jgrasstools snapshots</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</repository>
+	</repositories>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>org.hortonmachine</groupId>
+			<artifactId>hm-gears</artifactId>
+			<version>${hm.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.1</version>
+			<scope>test</scope>
+		</dependency>
+		
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.sonatype.central</groupId>
+				<artifactId>central-publishing-maven-plugin</artifactId>
+				<version>0.9.0</version>
+				<extensions>true</extensions>
+				<configuration>
+					<publishingServerId>central</publishingServerId>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.sonatype.plugins</groupId>
+				<artifactId>nexus-staging-maven-plugin</artifactId>
+				<version>1.6.13</version>
+				<extensions>true</extensions>
+				<configuration>
+					<serverId>central</serverId>
+					<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+					<autoReleaseAfterClose>true</autoReleaseAfterClose>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.13.0</version>
+				<configuration>
+					<release>${java.version}</release>
+					<encoding>${project.build.sourceEncoding}</encoding>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>3.1.4</version>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>3.2.0</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.12.0</version>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<source>${java.version}</source>
+					<failOnError>false</failOnError>
+					<additionalOptions>
+						<additionalOption>-Xdoclint:none</additionalOption>
+						<additionalOption>-quiet</additionalOption>
+					</additionalOptions>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.4.2</version>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Automatic-Module-Name>
+								org.geoframe.erm</Automatic-Module-Name>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>release</id>
+			<activation>
+				<property>
+					<name>performRelease</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>3.2.7</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>
