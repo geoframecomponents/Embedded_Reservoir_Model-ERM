@@ -15,8 +15,8 @@ Description
  If you are looking for the original Gradle-based implementation or wish to continue development from the previous codebase, you can find it under the Git tag **`v1.1.1`**.
 
 
- ## Installation
-
+Installation
+----------------
 The library is available on **[Maven Central](https://central.sonatype.com/artifact/org.geoframe/erm)**
 
 Add the following dependency to your `pom.xml`:
