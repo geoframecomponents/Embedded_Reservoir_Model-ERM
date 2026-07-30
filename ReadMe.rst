@@ -16,19 +16,19 @@ Description
 
 
 Installation
-----------------
-The library is available on **[Maven Central](https://central.sonatype.com/artifact/org.geoframe/erm)**
+------------
 
-Add the following dependency to your `pom.xml`:
+The library is available on `Maven Central <https://central.sonatype.com/artifact/org.geoframe/erm>`_.
 
-``
-xml
-<dependency>
-    <groupId>org.geoframe</groupId>
-    <artifactId>erm</artifactId>
-    <version>1.1.2</version>
-</dependency>
-``
+Add the following dependency to your ``pom.xml``:
+
+.. code-block:: xml
+
+    <dependency>
+        <groupId>org.geoframe</groupId>
+        <artifactId>erm</artifactId>
+        <version>1.1.2</version>
+    </dependency>
 
 Implementation
 ~~~~~~~~~~~~~~
