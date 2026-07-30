@@ -1,36 +1,33 @@
 WATER_BUDGET
+
 ============
 
-``@author`` Marialaura Bancheri
+``@author`` Marialaura Bancheri, Daniele Andreis, Giuseppe Formetta
 
 ``@copyright`` GNU Public License v3 AboutHydrology (Riccardo Rigon)
 
 Description
 -----------
+ **Repository Update**
 
-This is a Gradle project
+ This repository has undergone several changes compared to the original version. In particular, the build system has been migrated from **Gradle** to **Maven**.
 
-.. figure:: doc/ReadMe/gradle.png
-   :alt: Gradle logo
+ If you are looking for the original Gradle-based implementation or wish to continue development from the previous codebase, you can find it under the Git tag **`v1.1.1`**.
 
-   Gradle logo
 
-To build the project just run
+ ## Installation
 
-::
+The library is available on **[Maven Central](https://central.sonatype.com/artifact/org.geoframe/erm)**
 
-   ~ $ gradle build
+Add the following dependency to your `pom.xml`:
 
-in the working directory. You will find the built ``.jar`` in
-``build/libs``. But a built version of the lates release is already
-available at the `GitHub release
-section <release://github.com/geoframecomponents/WATER_BUDGET/releases>`__
-
-To build the ReadMe file from the markdown one in the doc/ReadMe folder
-
-::
-
-   pandoc doc/ReadMe/ReadMe.md -o ReadMe.rst --bibliography=doc/ReadMe/biblio.bib
+```xml
+<dependency>
+    <groupId>org.geoframe</groupId>
+    <artifactId>erm</artifactId>
+    <version>1.1.2</version>
+</dependency>
+```
 
 Implementation
 ~~~~~~~~~~~~~~
