@@ -21,13 +21,14 @@ The library is available on **[Maven Central](https://central.sonatype.com/artif
 
 Add the following dependency to your `pom.xml`:
 
-```xml
+``
+xml
 <dependency>
     <groupId>org.geoframe</groupId>
     <artifactId>erm</artifactId>
     <version>1.1.2</version>
 </dependency>
-```
+``
 
 Implementation
 ~~~~~~~~~~~~~~
