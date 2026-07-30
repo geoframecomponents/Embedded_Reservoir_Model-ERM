@@ -2,7 +2,7 @@ WATER_BUDGET
 
 ============
 
-``@author`` Marialaura Bancheri, Daniele Andreis, Giuseppe Formetta
+``@authors`` Marialaura Bancheri, Daniele Andreis, Giuseppe Formetta
 
 ``@copyright`` GNU Public License v3 AboutHydrology (Riccardo Rigon)
 
